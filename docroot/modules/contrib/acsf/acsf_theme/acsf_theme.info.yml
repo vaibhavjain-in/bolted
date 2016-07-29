@@ -1,0 +1,14 @@
+name: ACSF Theme
+type: module
+description: 'Handles VCS-based themes on Acquia Cloud Site Factory.'
+package: Acquia Cloud Site Factory
+# version: VERSION
+# core: 8.x
+dependencies:
+ - acsf_variables
+
+# Information added by Drupal.org packaging script on 2016-06-29
+version: '8.x-1.26'
+core: '8.x'
+project: 'acsf'
+datestamp: 1467210974

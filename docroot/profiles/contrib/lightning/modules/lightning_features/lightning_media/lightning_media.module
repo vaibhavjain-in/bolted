@@ -1,0 +1,88 @@
+<?php
+
+use Drupal\Core\Entity\Entity\EntityFormDisplay;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\field\Entity\FieldConfig;
+use Drupal\media_entity\MediaBundleInterface;
+use Drupal\user\RoleInterface;
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function lightning_media_form_entity_browser_media_browser_form_alter(array &$form, FormStateInterface $form_state) {
+  $form['#attached']['library'][] = 'lightning_media/browser.styling';
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert().
+ */
+function lightning_media_media_bundle_insert(MediaBundleInterface $bundle) {
+  /** @var \Drupal\field\Entity\FieldConfig $field */
+  $field = FieldConfig::create([
+    'field_name' => 'field_media_in_library',
+    'entity_type' => 'media',
+    'bundle' => $bundle->id(),
+  ]);
+
+  $t = \Drupal::translation();
+  $field
+    ->setSetting('on_label', $t->translate('Saved to my media library'))
+    ->setSetting('off_label', $t->translate('Not in my media library'))
+    ->setLabel($t->translate('Save to my media library'))
+    ->setDefaultValue(TRUE)
+    ->save();
+
+  $form_display = EntityFormDisplay::load('media.' . $bundle->id() . '.default');
+  if (empty($form_display)) {
+    $form_display = EntityFormDisplay::create([
+      'targetEntityType' => 'media',
+      'bundle' => $bundle->id(),
+      'mode' => 'default',
+      'status' => TRUE,
+    ]);
+  }
+  $form_display->setComponent('field_media_in_library', [
+    'type' => 'boolean_checkbox',
+    'settings' => [
+      'display_label' => TRUE,
+    ],
+  ])->save();
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function lightning_media_form_entity_embed_dialog_alter(array &$form, FormStateInterface $form_state) {
+  list ($editor, $embed_button) = $form_state->getBuildInfo()['args'];
+
+  /** @var \Drupal\embed\EmbedButtonInterface $embed_button */
+  if ($embed_button->id() == 'media_browser') {
+    $element = &$form['attributes']['data-entity-embed-settings']['view_mode'];
+    if (isset($element['#options']['embedded'])) {
+      $element['#default_value'] = 'embedded';
+    }
+  }
+}
+
+/**
+ * Implements hook_js_settings_alter().
+ */
+function lightning_media_js_settings_alter(array &$settings, \Drupal\Core\Asset\AttachedAssetsInterface $assets) {
+  if (empty($settings['ajax'])) {
+    $settings['ajax'] = [];
+  }
+}
+
+/**
+ * Preprocess function for grid views of the media library.
+ *
+ * @param array $variables
+ *   Template variables.
+ */
+function lightning_media_preprocess_views_view_grid__media(array &$variables) {
+  foreach ($variables['items'] as &$item) {
+    foreach ($item['content'] as &$column) {
+      $column['attributes']['data-selectable'] = 'true';
+    }
+  }
+}
